@@ -1,0 +1,265 @@
+:root {
+  color-scheme: light;
+  --zabbix-blue: #0d67a8;
+  --zabbix-dark: #0b3f67;
+  --ink: #172033;
+  --muted: #667085;
+  --line: #d8e2ec;
+  --panel: #ffffff;
+  --page: #f4f8fb;
+  --ok: #1a9b5a;
+  --watch: #5684d8;
+  --warning: #d98c00;
+  --alarm: #d92d20;
+  --unknown: #7a8594;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+}
+
+.dashboard {
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.topbar {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--zabbix-blue);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.eyebrow {
+  color: var(--zabbix-blue);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.suite-status,
+.status-pill {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+.ok { background: var(--ok); }
+.watch { background: var(--watch); }
+.warning { background: var(--warning); }
+.alarm { background: var(--alarm); }
+.unknown { background: var(--unknown); }
+
+.rack,
+.pdu-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.racks {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+  margin-top: 14px;
+}
+
+.rack {
+  overflow: hidden;
+}
+
+.rack-header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.rack-header h2 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.rack-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.failover {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 14px;
+}
+
+.failover-title {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.failover-title strong {
+  font-size: 14px;
+}
+
+.failover p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.projection {
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 10px;
+}
+
+.projection div {
+  background: #f6f9fc;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 8px;
+}
+
+.pdu-card {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 78px 1fr;
+  padding: 12px;
+}
+
+.pdu-card img {
+  align-self: start;
+  height: 300px;
+  max-width: 66px;
+  object-fit: contain;
+  width: 100%;
+}
+
+.pdu-head {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pdu-title h3 {
+  font-size: 17px;
+  margin: 0 0 3px;
+}
+
+.pdu-title span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.phase-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.phase-row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 34px 1fr 58px;
+  align-items: center;
+}
+
+.phase-row span,
+.phase-row strong {
+  font-size: 13px;
+}
+
+.bar {
+  background: #eaf0f6;
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+}
+
+.updated {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 13px;
+  gap: 18px;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding: 0 4px;
+}
+
+@media (max-width: 1260px) {
+  .racks {
+    grid-template-columns: repeat(2, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard {
+    padding: 10px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .racks {
+    grid-template-columns: 1fr;
+  }
+
+  .pdu-card {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .pdu-card img {
+    height: 250px;
+  }
+}

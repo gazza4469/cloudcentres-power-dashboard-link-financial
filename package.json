@@ -1,0 +1,12 @@
+{
+  "name": "cloudcentres-power-dashboard-link-financial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Iframe-friendly Zabbix dashboard for Link Financial Suite D PDUs.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
