@@ -9,7 +9,7 @@
   --page: #f4f8fb;
   --ok: #1a9b5a;
   --watch: #5684d8;
-  --warning: #d98c00;
+  --warning: #5684d8;
   --alarm: #d92d20;
   --unknown: #7a8594;
   font-family: "Segoe UI", Arial, sans-serif;
@@ -57,7 +57,23 @@ h1 {
   margin: 0;
 }
 
-.suite-status,
+.status-key {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.status-key span {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
 .status-pill {
   align-items: center;
   border: 1px solid var(--line);
@@ -68,6 +84,15 @@ h1 {
   min-height: 34px;
   padding: 7px 12px;
   white-space: nowrap;
+}
+
+.suite-status.status-key {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  justify-content: flex-end;
+  margin-top: 0;
+  min-height: 42px;
+  padding: 9px 12px;
 }
 
 .status-dot {

@@ -4,8 +4,8 @@ const state = {
 
 const statusLabels = {
   ok: "OK",
-  watch: "Watch",
-  warning: "Warning",
+  watch: "Review",
+  warning: "Review",
   alarm: "Alarm",
   unknown: "Unknown"
 };
@@ -15,19 +15,17 @@ setInterval(load, state.refreshMs);
 
 async function load() {
   try {
-    const response = await fetch("/api/power", { cache: "no-store" });
+    const response = await fetch("api/power", { cache: "no-store" });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load power data");
     render(data);
   } catch (error) {
-    document.getElementById("suiteStatus").innerHTML = statusPill("alarm", "Data unavailable");
     document.getElementById("racks").innerHTML = `<section class="rack"><div class="rack-header"><h2>Unable to load</h2></div><div class="failover"><p>${escapeHtml(error.message)}</p></div></section>`;
   }
 }
 
 function render(data) {
   const { suite, racks } = data;
-  document.getElementById("suiteStatus").innerHTML = statusPill(suite.status, suiteStatusText(suite.status));
   document.getElementById("racks").innerHTML = racks.map(renderRack).join("");
   document.getElementById("lastUpdated").textContent = `Updated ${new Date(suite.generatedAt).toLocaleString()}`;
 }
@@ -105,9 +103,9 @@ function statusPill(status, label) {
 
 function suiteStatusText(status) {
   if (status === "ok") return "Suite D within 16A phase model";
-  if (status === "warning") return "Suite D nearing 16A phase model";
+  if (status === "warning") return "Phase balance should be reviewed for optimal resilience";
   if (status === "alarm") return "PDU not balanced adequately across phases for optimal resilience";
-  if (status === "watch") return "Suite D has advisory items";
+  if (status === "watch") return "Phase balance should be reviewed for optimal resilience";
   return "Suite D state unknown";
 }
 

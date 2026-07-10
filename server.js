@@ -19,7 +19,6 @@ const ZBX_API_TOKEN = process.env.ZBX_API_TOKEN;
 
 const ITEM_KEYS = [
   "pdu_Meter_all-IRMS",
-  "pdu_Meter_all-PF",
   "pdu_Meter_all-kWS_average_load",
   "pdu_Phase_avg_all",
   "pdu_Phase_1_percentage_load",
@@ -117,13 +116,12 @@ function buildDashboardPayload(hosts, items) {
       name: host.name,
       rack,
       feed,
-      image: feed.toLowerCase() === "green" ? "/assets/EFS-Right-PDU.png" : "/assets/EFS-Left-PDU.jpg",
+      image: feed.toLowerCase() === "green" ? "assets/EFS-Right-PDU.png" : "assets/EFS-Left-PDU.jpg",
       online: host.status === "0",
       lastClock: Math.max(...Array.from(map.values()).map((item) => Number(item.lastclock || 0))),
       totalAmps,
       loadKw,
       averageAmps: num(map.get("pdu_Phase_avg_all")?.lastvalue),
-      powerFactor: num(map.get("pdu_Meter_all-PF")?.lastvalue),
       phases,
       worstPhase,
       headroom: PHASE_LIMIT_AMPS - worstPhase
@@ -173,7 +171,6 @@ function pduStatus(pdu) {
   if (!pdu.online) return "unknown";
   if (pdu.phases.some((phase) => phase.status === "alarm")) return "alarm";
   if (pdu.phases.some((phase) => phase.status === "warning")) return "warning";
-  if (pdu.powerFactor > 0 && pdu.powerFactor < 0.85) return "watch";
   return "ok";
 }
 
