@@ -17,6 +17,8 @@
 
 * {
   box-sizing: border-box;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
 body {
@@ -97,16 +99,32 @@ h1 {
 
 .status-dot {
   border-radius: 50%;
+  border: 1px solid currentColor;
   display: inline-block;
   height: 10px;
   width: 10px;
 }
 
-.ok { background: var(--ok); }
-.watch { background: var(--watch); }
-.warning { background: var(--warning); }
-.alarm { background: var(--alarm); }
-.unknown { background: var(--unknown); }
+.ok {
+  background: var(--ok);
+  color: var(--ok);
+}
+
+.watch,
+.warning {
+  background: var(--watch);
+  color: var(--watch);
+}
+
+.alarm {
+  background: var(--alarm);
+  color: var(--alarm);
+}
+
+.unknown {
+  background: var(--unknown);
+  color: var(--unknown);
+}
 
 .rack,
 .pdu-card {
@@ -247,6 +265,25 @@ h1 {
   display: block;
   height: 100%;
   max-width: 100%;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .status-dot {
+    border-width: 3px;
+  }
+
+  .bar {
+    border: 1px solid #c7d3df;
+    height: 12px;
+  }
+
+  .bar i {
+    border-right: 2px solid currentColor;
+  }
 }
 
 .updated {
