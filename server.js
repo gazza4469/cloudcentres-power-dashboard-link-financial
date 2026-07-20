@@ -5,10 +5,18 @@ const path = require("node:path");
 
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
+const CACHE_FILE = path.join(ROOT, "dashboard-cache.json");
 const GROUP_ID = "117";
 const PHASE_LIMIT_AMPS = 16;
 const WARNING_RATIO = 0.8;
 const ALARM_RATIO = 1;
+const STATUS_LABELS = {
+  ok: "OK",
+  watch: "Review",
+  warning: "Review",
+  alarm: "Alarm",
+  unknown: "Unknown"
+};
 
 loadEnv(path.join(ROOT, "ro.env"));
 loadEnv(path.join(ROOT, ".env"));
@@ -16,6 +24,7 @@ loadEnv(path.join(ROOT, ".env"));
 const PORT = Number(process.env.PORT || 3000);
 const ZBX_URL = process.env.ZBX_URL;
 const ZBX_API_TOKEN = process.env.ZBX_API_TOKEN;
+let latestPayload = readCachedPayload();
 
 const ITEM_KEYS = [
   "pdu_Meter_all-IRMS",
@@ -46,6 +55,10 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, zabbixConfigured: Boolean(ZBX_URL && ZBX_API_TOKEN) });
       return;
     }
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      await serveDashboardHtml(res);
+      return;
+    }
     serveStatic(url.pathname, res);
   } catch (error) {
     console.error(error);
@@ -58,9 +71,13 @@ server.listen(PORT, () => {
 });
 
 async function handlePower(req, res) {
+  const payload = await getPowerPayload();
+  sendJson(res, 200, payload);
+}
+
+async function getPowerPayload() {
   if (!ZBX_URL || !ZBX_API_TOKEN) {
-    sendJson(res, 500, { error: "Missing ZBX_URL or ZBX_API_TOKEN. Create .env or ro.env first." });
-    return;
+    throw new Error("Missing ZBX_URL or ZBX_API_TOKEN. Create .env or ro.env first.");
   }
 
   const hosts = await zabbix("host.get", {
@@ -81,7 +98,9 @@ async function handlePower(req, res) {
   });
 
   const payload = buildDashboardPayload(suiteHosts, items);
-  sendJson(res, 200, payload);
+  latestPayload = payload;
+  writeCachedPayload(payload);
+  return payload;
 }
 
 function buildDashboardPayload(hosts, items) {
@@ -289,6 +308,106 @@ function isCertificateChainError(error) {
   return ["UNABLE_TO_VERIFY_LEAF_SIGNATURE", "SELF_SIGNED_CERT_IN_CHAIN", "DEPTH_ZERO_SELF_SIGNED_CERT"].includes(error.code);
 }
 
+async function serveDashboardHtml(res) {
+  const filePath = path.join(PUBLIC_DIR, "index.html");
+  fs.readFile(filePath, "utf8", async (error, template) => {
+    if (error) {
+      res.writeHead(404);
+      res.end("Not found");
+      return;
+    }
+
+    try {
+      const payload = await getPowerPayload();
+      const html = template
+        .replace('<section class="racks" id="racks"></section>', `<section class="racks" id="racks">${renderRacksHtml(payload.racks)}</section>`)
+        .replace('<section class="updated" id="lastUpdated">Waiting for first refresh...</section>', `<section class="updated" id="lastUpdated">Updated ${htmlEscape(new Date(payload.suite.generatedAt).toLocaleString("en-GB"))}</section>`);
+      sendHtml(res, html);
+    } catch (renderError) {
+      console.error(renderError);
+      if (latestPayload) {
+        const cachedHtml = template
+          .replace('<section class="racks" id="racks"></section>', `<section class="racks" id="racks">${renderRacksHtml(latestPayload.racks)}</section>`)
+          .replace('<section class="updated" id="lastUpdated">Waiting for first refresh...</section>', `<section class="updated" id="lastUpdated">Updated ${htmlEscape(new Date(latestPayload.suite.generatedAt).toLocaleString("en-GB"))} using last successful refresh</section>`);
+        sendHtml(res, cachedHtml);
+        return;
+      }
+      sendHtml(res, template);
+    }
+  });
+}
+
+function renderRacksHtml(racks) {
+  return racks.map((rack) => `
+    <article class="rack">
+      <div class="rack-header">
+        <h2>${htmlEscape(rack.name)}</h2>
+        ${renderStatusPill(rack.status)}
+      </div>
+      ${renderFailoverHtml(rack)}
+      <div class="rack-body">
+        ${rack.pdus.map(renderPduHtml).join("")}
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderFailoverHtml(rack) {
+  const projections = rack.failover.projected || [];
+  return `
+    <div class="failover">
+      <div class="failover-title">
+        <strong>Worst-case paired PDU projection</strong>
+        ${renderStatusPill(rack.failover.status)}
+      </div>
+      <p>${htmlEscape(rack.failover.message)}</p>
+      <div class="projection">
+        ${projections.map((projection) => `
+          <div>
+            <strong>${htmlEscape(projection.feed)} carries pair</strong><br>
+            Max phase ${fmt(projection.maxAmps, 2)} A
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderPduHtml(pdu) {
+  return `
+    <section class="pdu-card">
+      <img src="${htmlEscape(pdu.image)}" alt="${htmlEscape(pdu.feed)} PDU">
+      <div>
+        <div class="pdu-head">
+          <div class="pdu-title">
+            <h3>${htmlEscape(pdu.feed)} PDU</h3>
+            <span>${htmlEscape(pdu.host)}</span>
+          </div>
+          ${renderStatusPill(pdu.status)}
+        </div>
+        <div class="phase-list">
+          ${pdu.phases.map(renderPhaseHtml).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderPhaseHtml(phase) {
+  const percent = Math.max(0, Math.min(100, (phase.amps / PHASE_LIMIT_AMPS) * 100));
+  return `
+    <div class="phase-row">
+      <strong>${htmlEscape(phase.name)}</strong>
+      <div class="bar"><i class="${htmlEscape(phase.status)}" style="width:${percent}%"></i></div>
+      <span>${fmt(phase.amps, 2)} A</span>
+    </div>
+  `;
+}
+
+function renderStatusPill(status) {
+  return `<span class="status-pill"><span class="status-dot ${htmlEscape(status)}"></span>${htmlEscape(STATUS_LABELS[status] || status)}</span>`;
+}
+
 function serveStatic(urlPath, res) {
   const requested = urlPath === "/" ? "/index.html" : decodeURIComponent(urlPath);
   const filePath = path.normalize(path.join(PUBLIC_DIR, requested));
@@ -311,6 +430,14 @@ function serveStatic(urlPath, res) {
     });
     res.end(content);
   });
+}
+
+function sendHtml(res, html) {
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  res.end(html);
 }
 
 function sendJson(res, status, body) {
@@ -343,6 +470,22 @@ function loadEnv(filePath) {
   }
 }
 
+function readCachedPayload() {
+  try {
+    if (!fs.existsSync(CACHE_FILE)) return null;
+    return JSON.parse(fs.readFileSync(CACHE_FILE, "utf8"));
+  } catch (error) {
+    console.warn(`Unable to read dashboard cache: ${error.message}`);
+    return null;
+  }
+}
+
+function writeCachedPayload(payload) {
+  fs.writeFile(CACHE_FILE, JSON.stringify(payload), (error) => {
+    if (error) console.warn(`Unable to write dashboard cache: ${error.message}`);
+  });
+}
+
 function num(value) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -350,4 +493,22 @@ function num(value) {
 
 function sum(items, key) {
   return items.reduce((total, item) => total + num(item?.[key]), 0);
+}
+
+function fmt(value, decimals) {
+  if (!Number.isFinite(Number(value))) return "0";
+  return Number(value).toLocaleString("en-GB", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+function htmlEscape(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  }[char]));
 }
