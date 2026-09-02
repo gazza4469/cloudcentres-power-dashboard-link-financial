@@ -50,7 +50,7 @@ function renderFailover(rack) {
   return `
     <div class="failover">
       <div class="failover-title">
-        <strong>Worst-case paired PDU projection</strong>
+        <strong>Resilience projection</strong>
         ${statusPill(rack.failover.status, statusLabels[rack.failover.status])}
       </div>
       <p>${rack.failover.message}</p>
@@ -69,20 +69,32 @@ function renderFailover(rack) {
 function renderPdu(pdu) {
   return `
     <section class="pdu-card">
-      <img src="${pdu.image}" alt="${pdu.feed} PDU">
+      <img class="${pdu.model === "Vertiv" ? "pdu-image-wide" : ""}" src="${pdu.image}" alt="${pdu.feed} PDU">
       <div>
         <div class="pdu-head">
           <div class="pdu-title">
             <h3>${pdu.feed} PDU</h3>
-            <span>${pdu.host}</span>
+            <span>${pdu.model} | ${pdu.host}</span>
           </div>
           ${statusPill(pdu.status, statusLabels[pdu.status])}
         </div>
+        ${pdu.circuits.some((circuit) => circuit.monitored) ? `<div class="circuit-list">${pdu.circuits.map(renderCircuit).join("")}</div>` : '<p class="migration-note">Awaiting Vertiv circuit monitoring for this feed.</p>'}
         <div class="phase-list">
           ${pdu.phases.map(renderPhase).join("")}
         </div>
       </div>
     </section>
+  `;
+}
+
+function renderCircuit(circuit) {
+  const percent = Math.max(0, Math.min(100, (circuit.amps / 16) * 100));
+  return `
+    <div class="circuit-row">
+      <strong>${circuit.name}</strong>
+      <div class="bar"><i class="${circuit.status}" style="width:${percent}%"></i></div>
+      <span>${fmt(circuit.amps, 2)} A</span>
+    </div>
   `;
 }
 
@@ -102,10 +114,10 @@ function statusPill(status, label) {
 }
 
 function suiteStatusText(status) {
-  if (status === "ok") return "Suite D within 16A phase model";
-  if (status === "warning") return "Phase balance should be reviewed for optimal resilience";
-  if (status === "alarm") return "PDU not balanced adequately across phases for optimal resilience";
-  if (status === "watch") return "Phase balance should be reviewed for optimal resilience";
+  if (status === "ok") return "Suite D within monitored circuit and phase limits";
+  if (status === "warning") return "Circuit or phase balance should be reviewed";
+  if (status === "alarm") return "PDU circuit or phase loading requires resilience review";
+  if (status === "watch") return "Circuit or phase balance should be reviewed";
   return "Suite D state unknown";
 }
 
