@@ -7,7 +7,7 @@ const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const CACHE_FILE = path.join(ROOT, "dashboard-cache.json");
 const GROUP_ID = "117";
-const PHASE_LIMIT_AMPS = 16;
+const PHASE_LIMIT_AMPS = 32;
 const CIRCUIT_LIMIT_AMPS = 16;
 const WARNING_RATIO = 0.8;
 const ALARM_RATIO = 1;
@@ -138,6 +138,7 @@ function buildDashboardPayload(hosts, items) {
     const phases = [1, 2, 3].map((phase) => ({
       name: `L${phase}`,
       amps: firstNum(map.get(`pduPhaseCurrent[${phase}]`)?.lastvalue, map.get(`pdu_Meter${phase}-IRMS`)?.lastvalue),
+      limit: PHASE_LIMIT_AMPS,
       kw: firstNum(map.get(`pduPhaseRealPower[${phase}]`)?.lastvalue / 1000, map.get(`pdu_Meter${phase}-KW`)?.lastvalue),
       volts: firstNum(map.get(`pduPhaseVoltage[${phase}]`)?.lastvalue, map.get(`pdu_Meter${phase}-VRMS`)?.lastvalue),
       share: num(map.get(`pdu_Phase_${phase}_percentage_load`)?.lastvalue),
@@ -257,6 +258,7 @@ function failoverStatus(pdus) {
     const phases = target.phases.map((phase, index) => ({
       name: phase.name,
       amps: phase.amps + sum(others.map((pdu) => pdu.phases[index]), "amps"),
+      limit: PHASE_LIMIT_AMPS,
       status: loadStatus(phase.amps + sum(others.map((pdu) => pdu.phases[index]), "amps"), PHASE_LIMIT_AMPS)
     }));
     return {
@@ -280,10 +282,10 @@ function failoverStatus(pdus) {
     status: worst,
     projected,
     message: worst === "ok"
-      ? "Either PDU can absorb the current paired phase load below 16A."
+      ? "Either PDU can absorb the current paired phase load below 32A per phase."
       : worst === "warning"
-        ? "Failover projection is close to the 16A phase ceiling."
-        : "Failover projection exceeds the 16A phase ceiling."
+        ? "Failover projection is close to the 32A phase ceiling."
+        : "Failover projection exceeds the 32A phase ceiling."
   };
 }
 

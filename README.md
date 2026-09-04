@@ -29,4 +29,8 @@ The dashboard uses Vertiv per-circuit breaker current where available. Each PDU 
 - `Warning`: at or above 12.8A.
 - `Alarm`: at or above 16A.
 
-The dashboard also retains the three-phase resilience projection so each rack can still be reviewed for phase balance across the paired Green and Orange feeds.
+The dashboard also retains the three-phase resilience projection so each rack can still be reviewed for phase balance across the paired Green and Orange feeds. Because the Vertiv PDUs are 32A three-phase units, the phase/failover model uses a 32A ceiling per phase:
+
+- `OK`: below 80% of 32A.
+- `Warning`: at or above 25.6A.
+- `Alarm`: at or above 32A.

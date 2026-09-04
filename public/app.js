@@ -88,7 +88,7 @@ function renderPdu(pdu) {
 }
 
 function renderCircuit(circuit) {
-  const percent = Math.max(0, Math.min(100, (circuit.amps / 16) * 100));
+  const percent = Math.max(0, Math.min(100, (circuit.amps / circuit.limit) * 100));
   return `
     <div class="circuit-row">
       <strong>${circuit.name}</strong>
@@ -99,7 +99,7 @@ function renderCircuit(circuit) {
 }
 
 function renderPhase(phase) {
-  const percent = Math.max(0, Math.min(100, (phase.amps / 16) * 100));
+  const percent = Math.max(0, Math.min(100, (phase.amps / phase.limit) * 100));
   return `
     <div class="phase-row">
       <strong>${phase.name}</strong>
